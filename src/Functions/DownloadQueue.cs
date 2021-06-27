@@ -21,16 +21,19 @@ public static class DownloadQueue
 
     private static void Timer_Elapsed(object sender, ElapsedEventArgs e)
     {
-        if(Running.Count > 0)
+        if (Running.Count > 0)
         {
             for (var i = Running.Count - 1; i >= 0; i--)
             {
                 var job = Running[i];
-                if (job.Completed) Running.RemoveAt(i);
-                job.Dispose();
+                if (job.Completed)
+                {
+                    Running.RemoveAt(i);
+                    job.Dispose();
+                }
             }
         }
-        while(Running.Count < Config.ConcurrentDownload)
+        while (Running.Count < Config.ConcurrentDownload)
         {
             var job = Queue.Dequeue();
             Running.Add(job);
@@ -38,14 +41,14 @@ public static class DownloadQueue
         }
     }
 
-    public static void Add(DownloadClient client)
+    public static void Add(DownloadClient client, int priority = 2)
     {
-        Queue.Enqueue(client, 2);
+        Queue.Enqueue(client, priority);
         Start();
     }
 
-    public static void Add(string url)
+    public static void Add(string url, int priority = 2)
     {
-        Add(new DownloadClient(url));
+        Add(new DownloadClient(url, priority));
     }
 }
