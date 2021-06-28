@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Timers;
 
 public static class DownloadQueue
 {
-    public static PriorityQueue<DownloadClient, int> Queue = new PriorityQueue<DownloadClient, int>();
-    public static List<DownloadClient> Running = new List<DownloadClient>();
+    public static List<DownloadClient> Queue = new List<DownloadClient>();
 
     private static Timer checkTimer;
 
@@ -21,34 +21,36 @@ public static class DownloadQueue
 
     private static void Timer_Elapsed(object sender, ElapsedEventArgs e)
     {
-        if (Running.Count > 0)
+        checkTimer.Stop();
+        if (Queue.Count > 0)
         {
-            for (var i = Running.Count - 1; i >= 0; i--)
+            for (var i = Queue.Count - 1; i >= 0; i--)
             {
-                var job = Running[i];
+                var job = Queue[i];
                 if (job.Completed)
                 {
-                    Running.RemoveAt(i);
+                    Queue.RemoveAt(i);
                     job.Dispose();
                 }
             }
         }
-        while (Running.Count < Config.ConcurrentDownload)
+        if (Queue.Count > 0)
         {
-            var job = Queue.Dequeue();
-            Running.Add(job);
-            _ = job.DownloadAsync();
+            if (Queue.Count(x => x.Running) < Config.ConcurrentDownload)
+                Queue.FirstOrDefault(x => !x.Running && !x.Completed)?.DownloadAsync();
+            checkTimer.Start();
         }
     }
 
-    public static void Add(DownloadClient client, int priority = 2)
+    public static void Add(DownloadClient client)
     {
-        Queue.Enqueue(client, priority);
+        Queue.Add(client);
         Start();
     }
 
-    public static void Add(string url, int priority = 2)
+    public static void Add(string url)
     {
-        Add(new DownloadClient(url, priority));
+        Add(new DownloadClient(url));
     }
+
 }

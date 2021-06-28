@@ -1,0 +1,114 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Download Manager</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/file-icon-vectors@1.0.0/dist/file-icon-square-o.min.css" />
+
+    <script>
+        function updateData() {
+            console.log("sent fetch");
+            fetch("/api/list", { method: "GET", })
+                .then(response => response.json())
+                .then(result => { updateUI(result); })
+        }
+
+        function updateUI(data) {
+            console.log("update UI");
+            console.log(data);
+            var listWorking = document.getElementById('listWorking');
+            var added = document.querySelectorAll('#listWorking > div');
+
+            for (var element of added) {
+                var name = element.querySelector('.name').innerText.trim();
+                var find = data.filter(e => e.fileName === name);
+                if (find.length === 0) element.remove();
+                else {
+                    var progressbar = element.querySelector('.progressbar');
+                    if (progressbar) progressbar.style.width = find[0].progress + "%";
+                    var progressText = element.querySelector('.progressText');
+                    if (progressText) progressText.innerText = `Downloading: ${find[0].progress}%`;
+                }
+            }
+
+            added = document.querySelectorAll('#listWorking > div');
+            for (var item of data) {
+                var find = null;
+                for (var element of added) {
+                    if (element.querySelector('.name').innerText.trim() === item.fileName) {
+                        find = element;
+                        break;
+                    }
+                }
+                if (!find) {
+                    listWorking.insertAdjacentHTML('beforeend', `
+                        <div class='p-6 m-6 max-w-sm mx-auto bg-white rounded-xl shadow-md flex items-center space-x-5'>
+                            <div class='flex-shrink-0'>
+                                <span class="fiv-sqo fiv-size-lg fiv-icon-${item.extension}"></span>
+                            </div>
+                            <div class='w-80'>
+                                <div class='text-xl font-medium text-black name'>${item.fileName}</div>
+                                <p class='text-gray-500 progressText'>Downloading: ${item.progress}%</p>
+                                <div class='h-3 relative max-w-xl rounded-full overflow-hidden'>
+                                    <div class='w-full h-full bg-gray-200 absolute'></div>
+                                    <div class='progressbar transition-all ease-out duration-1000 h-full bg-green-500 relative w-0' style='width: ${item.progress}%'></div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                };
+            }
+        }
+
+        function sentLink() {
+            var linkInput = document.getElementById('linkInput');
+            if (!linkInput) return;
+            var link = linkInput.value.trim();
+            if (/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/.test(link)) {
+                fetch("/api/add", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({url: link})
+                }).then(res => {
+                    if (res.ok) {
+                        linkInput.value = "";
+                        updateData();
+                    } else {
+                        alert("Sent request failed!");
+                        console.log("Request complete! response:", res);
+                    }
+                });
+            }
+            else alert("Invalid url!");
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            updateData();
+            setInterval(function () { updateData(); }, 2000);
+        });
+    </script>
+</head>
+
+<body class="bg-light-gray">
+    <div class='p-6 m-6 max-w-sm mx-auto bg-white rounded-xl shadow-md flex items-center space-x-5'>
+        <div class='w-80'>
+            <div class='text-xl font-medium text-black name'>Add dowload link:</div>
+            <input id="linkInput" type="url" class="border border-purple-400" />
+            <button onclick="sentLink()" class="px-4 py-1 text-sm text-purple-600 font-semibold 
+                    border border-purple-400 hover:text-white hover:bg-purple-600 
+                    hover:border-transparent focus:outline-none focus:ring-2 rounded-full 
+                    focus:ring-purple-600 focus:ring-offset-2 m-2">Download</button>
+        </div>
+    </div>
+
+    <div id="listWorking">
+
+    </div>
+</body>
+
+</html>

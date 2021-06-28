@@ -12,6 +12,7 @@ public class DownloadClient : IDisposable
     public string Extension { get; set; }
     public int Progress { get; set; }
     public bool Completed { get; set; }
+    public bool Running { get; set; }
 
     public DownloadClient(string url)
     {
@@ -34,6 +35,7 @@ public class DownloadClient : IDisposable
 
     public async Task DownloadAsync()
     {
+        Running = true;
         try
         {
             var fileToWriteTo = Path.Combine(Config.DownloadPath, FileName);
@@ -48,7 +50,9 @@ public class DownloadClient : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            DownloadAsync();
         }
+        Running = false;
     }
 
     private void UpdateProgress(object sender, HttpProgressEventArgs e)

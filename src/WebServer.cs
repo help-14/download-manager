@@ -29,7 +29,6 @@ public class WebServer : IDisposable
 
     public void Run()
     {
-        //new DownloadClient().DownloadAsync("http://aka.ms/dotnet/net5/5.0.1xx/daily/Sdk/dotnet-sdk-linux-x64.tar.gz");
         app.Run();
     }
 
